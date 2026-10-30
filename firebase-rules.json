@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": "auth != null",
+        "slots": {
+          ".write": "auth != null",
+          ".validate": "newData.numChildren() <= 2"
+        },
+        "events": {
+          "$eventId": {
+            ".write": "auth != null && ((!data.exists() && newData.child('author').val() === auth.uid) || (data.child('author').val() === auth.uid && !newData.exists()))",
+            ".validate": "newData.hasChildren(['author', 'type']) && newData.child('author').val() === auth.uid"
+          }
+        },
+        "live": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
+      }
+    }
+  }
+}
