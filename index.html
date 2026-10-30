@@ -127,7 +127,7 @@
     <label for="nicknameInput">اسمك اللي يظهر لصديقك</label><input type="text" id="nicknameInput" maxlength="22" placeholder="مثلاً: رسّام الربيع" autocomplete="nickname" />
     <div id="roomJoinArea"><div class="modal-actions"><button class="btn primary" id="createRoomBtn"><i data-lucide="plus"></i>إنشاء غرفة جديدة</button></div><div class="modal-divider">أو انضم لغرفة موجودة</div><label for="roomCodeInput">رابط الغرفة أو رمزها</label><input id="roomCodeInput" placeholder="الصق الرابط هنا" dir="ltr" /><div class="modal-actions"><button class="btn" id="joinRoomBtn">الدخول إلى الغرفة <i data-lucide="arrow-left"></i></button></div></div>
     <div class="room-link" id="roomLinkRow"><input id="roomLinkInput" readonly aria-label="رابط المشاركة" /><button class="btn primary icon-only" id="copyRoomLinkBtn" title="نسخ رابط الغرفة"><i data-lucide="copy"></i></button></div>
-    <div class="note" id="roomNote">الغرفة لشخصين فقط. رابط الغرفة خاص؛ شاركه مع الشخص اللي تبي ترسم معه. يلزم تفعيل Firebase لمزامنة الرسم.</div>
+    <div class="note" id="roomNote">الغرفة لشخصين فقط. الربط جاهز؛ أنشئ غرفة وشارك رابطها مع صديقك.</div>
     <div id="leaveRoomRow" style="display:none"><div class="modal-actions"><button class="btn alert" id="leaveRoomBtn"><i data-lucide="log-out"></i>مغادرة الغرفة</button></div></div>
   </div>
 </div>
@@ -192,11 +192,14 @@ window.lucide={createIcons(){for(const i of document.querySelectorAll('i[data-lu
  * قواعد الحماية المطلوبة موجودة في firebase-rules.json.
  */
 const FIREBASE_CONFIG = {
-  apiKey: "PUT_YOUR_API_KEY_HERE",
-  authDomain: "PUT_YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://PUT_YOUR_DATABASE_URL.firebasedatabase.app",
-  projectId: "PUT_YOUR_PROJECT_ID",
-  appId: "PUT_YOUR_APP_ID_HERE"
+  apiKey: "AIzaSyCwISstJhaMXXjO3WpsxhAAXqzvxhxf3wo",
+  authDomain: "waraqa-4c63e.firebaseapp.com",
+  databaseURL: "https://waraqa-4c63e-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "waraqa-4c63e",
+  storageBucket: "waraqa-4c63e.firebasestorage.app",
+  messagingSenderId: "259905743280",
+  appId: "1:259905743280:web:7abf93e4f9fc45b7bfce75",
+  measurementId: "G-TD2LB2KLDJ"
 };
 
 (() => {
@@ -345,7 +348,7 @@ const FIREBASE_CONFIG = {
   function parseRoomCode(raw){let value=String(raw||'').trim();try{if(value.includes('://')){const url=new URL(value);value=(url.hash.match(/room=([a-z0-9-]+)/i)||[])[1]||''}else if(value.includes('room=')){value=(value.match(/room=([a-z0-9-]+)/i)||[])[1]||''}}catch{}return /^[a-z0-9-]{12,36}$/i.test(value)?value:''}
   function makeRoomCode(){return [...crypto.getRandomValues(new Uint8Array(12))].map(b=>b.toString(16).padStart(2,'0')).join('')}
   function roomLink(code){return location.origin+location.pathname+'#room='+code}
-  function setRoomUI(){const active=!!room;$('roomBtnLabel').textContent=active?'الغرفة المشتركة':'ارسم مع صديق';$('boardModeText').textContent=active?'غرفة مشتركة · المزامنة فعّالة':'مساحة خاصة • محفوظة على جهازك';$('statusText').textContent=active?'غرفة مشتركة':'رسم فردي';$('statusDot').classList.toggle('online',active);$('roomJoinArea').style.display=active?'none':'block';$('roomLinkRow').classList.toggle('show',active);$('leaveRoomRow').style.display=active?'block':'none';$('roomNote').textContent=active?'الغرفة تستوعب رسّامين اثنين فقط. شارك الرابط مع صديقك وستظهر الرسومات على جهازكما.':'الغرفة لشخصين فقط. رابط الغرفة خاص؛ شاركه مع الشخص اللي تبي ترسم معه. يلزم تفعيل Firebase لمزامنة الرسم.';if(active)$('roomLinkInput').value=roomLink(room);updateMembersUI()}
+  function setRoomUI(){const active=!!room;$('roomBtnLabel').textContent=active?'الغرفة المشتركة':'ارسم مع صديق';$('boardModeText').textContent=active?'غرفة مشتركة · المزامنة فعّالة':'مساحة خاصة • محفوظة على جهازك';$('statusText').textContent=active?'غرفة مشتركة':'رسم فردي';$('statusDot').classList.toggle('online',active);$('roomJoinArea').style.display=active?'none':'block';$('roomLinkRow').classList.toggle('show',active);$('leaveRoomRow').style.display=active?'block':'none';$('roomNote').textContent=active?'الغرفة تستوعب رسّامين اثنين فقط. شارك الرابط مع صديقك وستظهر الرسومات على جهازكما.':'الغرفة لشخصين فقط. الربط جاهز؛ أنشئ غرفة وشارك رابطها مع صديقك.';if(active)$('roomLinkInput').value=roomLink(room);updateMembersUI()}
   function updateMembersUI(){const people=Object.values(roomMembers||{});$('topPeople').innerHTML='';if(room){for(const p of people){const node=document.createElement('span');node.className='avatar';node.style.background=p.color||'#92aa86';node.title=p.name||'رسّام';node.textContent=(p.name||'ر')[0];$('topPeople').appendChild(node)}if(people.length<2){const empty=document.createElement('span');empty.className='avatar empty';empty.textContent='+';$('topPeople').appendChild(empty)}$('canvasSubtitle').textContent=people.length+' / 2 متصلين · الرسم يُزامن تلقائيًا'}else $('canvasSubtitle').textContent='1600 × 1000 بكسل · ارسم ما يخطر ببالك'}
   function setRoomHash(code){if(history.replaceState)history.replaceState(null,'',location.pathname+location.search+(code?'#room='+code:''))}
   async function startRoom(code){if(!roomConfigReady()){notify('فعّل إعدادات Firebase داخل index.html أولاً، ثم ارفع الموقع');return false}if(room){notify('غادر الغرفة الحالية أولاً');return false}
