@@ -1,9 +1,9 @@
 import {readFile} from 'node:fs/promises';
 import {test, before,after} from 'node:test';
 import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
-import {ref,set,get} from 'firebase/database';
+import {ref,set,get,onValue,update,push} from 'firebase/database';
 let env,owner,guest,third;const room='rooms/AABBCCDDEEFF';
-before(async()=>{env=await initializeTestEnvironment({projectId:'demo-waraqa',database:{host:'127.0.0.1',port:9000,rules:await readFile(new URL('../database.rules.json',import.meta.url),'utf8')}});owner=env.authenticatedContext('owner').database();guest=env.authenticatedContext('guest').database();third=env.authenticatedContext('third').database();});
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-waraqa',database:{host:'127.0.0.1',port:9000,rules:await readFile(new URL('../database.rules.json',import.meta.url),'utf8')}});await env.clearDatabase();owner=env.authenticatedContext('owner').database();guest=env.authenticatedContext('guest').database();third=env.authenticatedContext('third').database();});
 after(async()=>{await env?.cleanup();});
 test('two seats, private reads, isolated edits and validated data',async()=>{
  await assertSucceeds(set(ref(owner,room),{owner:'owner',settings:{mode:'split',seed:0,round:'one'}}));
@@ -31,4 +31,38 @@ test('two seats, private reads, isolated edits and validated data',async()=>{
  await assertSucceeds(set(ref(owner,room+'/presence/owner/tab1'),null));
  await assertFails(get(ref(env.unauthenticatedContext().database(),room)));
  await assertFails(set(ref(outsider,'rooms/112233445566/guest'),'third'));
+});
+test('private nominations, consent, admin-only curation, no self-escalation',async()=>{
+ const visitor=env.authenticatedContext('artist').database(),stranger=env.authenticatedContext('stranger').database(),admin=env.authenticatedContext('curator').database(),anonymous=env.unauthenticatedContext().database();
+ await env.withSecurityRulesDisabled(async context=>set(ref(context.database(),'admins/curator'),true));
+ const nomination={uid:'artist',title:'حديقتي',artist:'رسام',image:'data:image/jpeg;base64,YWJj',consent:true,createdAt:Date.now()};
+ await assertFails(set(ref(visitor,'admins/artist'),true));
+ await assertFails(set(ref(anonymous,'submissions/artist'),nomination));
+ await assertFails(set(ref(stranger,'submissions/artist'),nomination));
+ await assertFails(set(ref(visitor,'submissions/artist'),{...nomination,consent:false}));
+ await assertFails(set(ref(visitor,'submissions/artist'),{...nomination,image:'https://tracker.example/image.png'}));
+ await assertSucceeds(set(ref(visitor,'submissions/artist'),nomination));
+ await assertSucceeds(get(ref(visitor,'submissions/artist')));
+ await assertFails(get(ref(stranger,'submissions/artist')));
+ await assertFails(get(ref(visitor,'submissions')));
+ await assertFails(get(ref(anonymous,'submissions')));
+ await assertSucceeds(get(ref(admin,'submissions')));
+ await assertFails(set(ref(visitor,'submissions/artist'),{...nomination,title:'replacement'}));
+ const feature={title:nomination.title,artist:nomination.artist,image:nomination.image,week:'2026-11-02',note:'اختيار الإدارة',publishedAt:Date.now()};
+ await assertFails(set(ref(visitor,'featured/art1'),feature));
+ await assertSucceeds(update(ref(admin),{'featured/art1':feature,'submissions/artist':null}));
+ await assertSucceeds(get(ref(anonymous,'featured')));
+ await assertFails(set(ref(stranger,'featured/art1'),null));
+ await assertSucceeds(set(ref(admin,'featured/art1'),null));
+ await assertSucceeds(set(ref(visitor,'submissions/artist'),{...nomination,createdAt:Date.now()}));
+ await assertSucceeds(set(ref(visitor,'submissions/artist'),null));
+});
+test('onValue delivers live stroke edits and undo to the second player',async()=>{
+ const host=env.authenticatedContext('host-live').database(),peer=env.authenticatedContext('peer-live').database(),path='rooms/ABCDEF123456';
+ await set(ref(host,path),{owner:'host-live',settings:{mode:'free',seed:10,round:'live'}});await set(ref(peer,path+'/guest'),'peer-live');
+ const target=push(ref(host,path+'/strokes')),observed=[];
+ let finish;const done=new Promise(resolve=>finish=resolve);const off=onValue(ref(peer,path+'/strokes/'+target.key),snap=>{if(snap.exists()){observed.push(snap.val());if(snap.val().visible===false)finish();}});
+ const stroke={uid:'host-live',round:'live',side:'all',tool:'pastel',color:'#123456',size:25,opacity:.7,visible:true,points:'[[100,100,0.75]]'};
+ await set(target,stroke);const extended={...stroke,points:'[[100,100,0.75],[220,220,0.75]]'};await set(target,extended);await set(target,{...extended,visible:false});
+ await Promise.race([done,new Promise((_,reject)=>{const t=setTimeout(()=>reject(Error('Live sync timed out')),3000);t.unref();})]);off();if(!observed.some(s=>s.points.includes('220'))||observed.at(-1).visible!==false)throw Error('Peer did not receive updates and undo');
 });

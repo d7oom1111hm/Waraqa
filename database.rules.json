@@ -17,25 +17,53 @@
         "settings": {
           ".write": "auth != null && root.child('rooms').child($room).child('owner').val() === auth.uid && newData.exists()",
           ".validate": "newData.hasChildren(['mode','seed','round'])",
-          "mode": {".validate": "newData.val() === 'split' || newData.val() === 'free'"},
-          "seed": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5 && newData.val() % 1 === 0"},
-          "round": {".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64"},
-          "$other": {".validate": false}
+          "mode": {
+            ".validate": "newData.val() === 'split' || newData.val() === 'free'"
+          },
+          "seed": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 11 && newData.val() % 1 === 0"
+          },
+          "round": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64"
+          },
+          "$other": {
+            ".validate": false
+          }
         },
         "strokes": {
           "$stroke": {
             ".write": "auth != null && (root.child('rooms').child($room).child('owner').val() === auth.uid || root.child('rooms').child($room).child('guest').val() === auth.uid) && newData.exists() && newData.child('uid').val() === auth.uid && (!data.exists() || data.child('uid').val() === auth.uid)",
             ".validate": "newData.hasChildren(['uid','round','side','tool','color','size','opacity','visible','points']) && newData.child('round').val() === root.child('rooms').child($room).child('settings/round').val() && (root.child('rooms').child($room).child('settings/mode').val() === 'free' ? newData.child('side').val() === 'all' : (root.child('rooms').child($room).child('owner').val() === auth.uid ? newData.child('side').val() === 'left' : newData.child('side').val() === 'right'))",
-            "uid": {".validate": "newData.val() === auth.uid"},
-            "round": {".validate": "newData.isString() && newData.val().length <= 64"},
-            "side": {".validate": "newData.val() === 'all' || newData.val() === 'left' || newData.val() === 'right'"},
-            "tool": {".validate": "newData.isString() && newData.val().matches(/^(pencil|ink|brush|water|marker|crayon|spray|eraser)$/)"},
-            "color": {".validate": "newData.isString() && newData.val().matches(/^#[a-fA-F0-9]{6}$/)"},
-            "size": {".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 80"},
-            "opacity": {".validate": "newData.isNumber() && newData.val() >= 0.05 && newData.val() <= 1"},
-            "visible": {".validate": "newData.isBoolean()"},
-            "points": {".validate": "newData.isString() && newData.val().length <= 24000"},
-            "$other": {".validate": false}
+            "uid": {
+              ".validate": "newData.val() === auth.uid"
+            },
+            "round": {
+              ".validate": "newData.isString() && newData.val().length <= 64"
+            },
+            "side": {
+              ".validate": "newData.val() === 'all' || newData.val() === 'left' || newData.val() === 'right'"
+            },
+            "tool": {
+              ".validate": "newData.isString() && newData.val().matches(/^(pencil|ink|brush|water|marker|crayon|spray|eraser|charcoal|pastel|calligraphy|soft|neon|rainbow|line|rect|ellipse|triangle|fill)$/)"
+            },
+            "color": {
+              ".validate": "newData.isString() && newData.val().matches(/^#[a-fA-F0-9]{6}$/)"
+            },
+            "size": {
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 80"
+            },
+            "opacity": {
+              ".validate": "newData.isNumber() && newData.val() >= 0.05 && newData.val() <= 1"
+            },
+            "visible": {
+              ".validate": "newData.isBoolean()"
+            },
+            "points": {
+              ".validate": "newData.isString() && newData.val().length <= 24000"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         },
         "presence": {
@@ -46,7 +74,78 @@
             }
           }
         },
-        "$other": {".validate": false}
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "admins": {
+      ".write": false,
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "submissions": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".indexOn": [
+        "createdAt"
+      ],
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "(auth != null && root.child('admins').child(auth.uid).val() === true) || (auth != null && auth.uid === $uid && ((!data.exists() && newData.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && !newData.exists())))",
+        ".validate": "newData.hasChildren(['uid','title','artist','image','consent','createdAt'])",
+        "uid": {
+          ".validate": "newData.val() === $uid"
+        },
+        "title": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 70"
+        },
+        "artist": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 35"
+        },
+        "image": {
+          ".validate": "newData.isString() && newData.val().length <= 600000 && newData.val().matches(/^data:image\\/(jpeg|png|webp);base64,[A-Za-z0-9+\\/=]+$/)"
+        },
+        "consent": {
+          ".validate": "newData.val() === true"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 60000"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "featured": {
+      ".read": true,
+      ".indexOn": [
+        "publishedAt"
+      ],
+      "$id": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".validate": "newData.hasChildren(['title','artist','image','week','note','publishedAt'])",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 70"
+        },
+        "artist": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 35"
+        },
+        "image": {
+          ".validate": "newData.isString() && newData.val().length <= 600000 && newData.val().matches(/^data:image\\/(jpeg|png|webp);base64,[A-Za-z0-9+\\/=]+$/)"
+        },
+        "week": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)"
+        },
+        "note": {
+          ".validate": "newData.isString() && newData.val().length <= 240"
+        },
+        "publishedAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now"
+        },
+        "$other": {
+          ".validate": false
+        }
       }
     }
   }

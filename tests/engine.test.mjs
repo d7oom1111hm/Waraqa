@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createCanvas} from '@napi-rs/canvas';
+import {paintStroke,validStroke,floodRegion,toolDefinitions} from '../engine.js';
+import {drawSketch,sketchNames} from '../sketches.js';
+const makeCanvas=()=>createCanvas(1200,900);
+const stroke={uid:'owner',round:'round',side:'all',tool:'brush',color:'#ff0000',size:24,opacity:1,visible:true,points:'[[100,100,0.75],[240,140,0.75]]'};
+test('all drawing tools render without throwing and create pixels',()=>{for(const [tool]of toolDefinitions){if(tool==='picker'||tool==='eraser')continue;const canvas=makeCanvas(),c=canvas.getContext('2d');paintStroke(c,{...stroke,tool},{makeCanvas});const pixels=c.getImageData(0,0,1200,900).data;assert.ok(pixels.some((v,i)=>i%4===3&&v>0),tool);}});
+test('half ownership is enforced by renderer and malicious points are ignored',()=>{const c=makeCanvas().getContext('2d');paintStroke(c,{...stroke,side:'left',size:80,points:'[[580,200,1],[900,200,1]]'});assert.equal(c.getImageData(700,200,1,1).data[3],0);assert.ok(c.getImageData(580,200,1,1).data[3]>0);assert.equal(validStroke({...stroke,points:'[["bad",2,1]]'}),false);assert.equal(validStroke({...stroke,size:999}),false);});
+test('eraser removes only its layer while another player survives composition',()=>{const a=makeCanvas(),b=makeCanvas();paintStroke(a.getContext('2d'),stroke);paintStroke(b.getContext('2d'),{...stroke,color:'#0000ff'});paintStroke(a.getContext('2d'),{...stroke,tool:'eraser',size:80});assert.equal(a.getContext('2d').getImageData(150,117,1,1).data[3],0);const out=makeCanvas().getContext('2d');out.drawImage(a,0,0);out.drawImage(b,0,0);assert.ok(out.getImageData(150,117,1,1).data[2]>200);});
+test('fill stops at color boundaries and respects the assigned half',()=>{const p=new Uint8ClampedArray(4*4*4).fill(255);for(let y=0;y<4;y++){const i=(y*4+2)*4;p[i]=p[i+1]=p[i+2]=0;}assert.equal(floodRegion(p,4,4,0,0).length,8);assert.equal(floodRegion(new Uint8ClampedArray(64).fill(255),4,4,0,0,{right:2}).length,8);});
+test('texture brushes are deterministic for both clients',()=>{for(const tool of ['spray','crayon','pastel','charcoal']){const a=makeCanvas(),b=makeCanvas();paintStroke(a.getContext('2d'),{...stroke,tool});paintStroke(b.getContext('2d'),{...stroke,tool});assert.deepEqual(a.toBuffer('image/png'),b.toBuffer('image/png'));}});
+test('all twelve templates have a visible outline',()=>{assert.equal(sketchNames.length,12);for(let i=0;i<12;i++){const c=makeCanvas().getContext('2d');drawSketch(c,i);assert.ok(c.getImageData(0,0,1200,900).data.some((v,j)=>j%4===3&&v>0),sketchNames[i]);}});

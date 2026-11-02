@@ -1,4 +1,4 @@
-export const sketchNames = ['حديقة على ورق','فراشة وبتلات','قهوة وهدوء','بيوت بين التلال','باقة صغيرة','عالم تحت البحر'];
+export const sketchNames = ['حديقة على ورق','فراشة وبتلات','قهوة وهدوء','بيوت بين التلال','باقة صغيرة','عالم تحت البحر','دوائر من هدوء','قط على النافذة','ليمون الصيف','أزهار التوليب','جبال بعيدة','نباتات البيت'];
 export function drawSketch(c, seed=0) {
   c.save(); c.strokeStyle='#8a8d80'; c.globalAlpha=.48; c.lineWidth=1.4; c.lineCap='round'; c.lineJoin='round';
   const line=(...p)=>{c.beginPath();c.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)c.lineTo(p[i],p[i+1]);c.stroke();};
@@ -7,7 +7,7 @@ export function drawSketch(c, seed=0) {
   const leaf=(x,y,dir=1)=>{curve(x,y,x+dir*65,y-80,x+dir*140,y-45,x+dir*85,y+2);curve(x+dir*85,y+2,x+dir*45,y+25,x+dir*15,y+18,x,y);line(x,y,x+dir*85,y-20);};
   const flower=(x,y,r=65,n=9)=>{for(let i=0;i<n;i++){let a=i*Math.PI*2/n;ellipse(x+Math.cos(a)*r*.87,y+Math.sin(a)*r*.87,r*.62,r*.27,a);}ellipse(x,y,r*.35,r*.35);for(let i=0;i<13;i++){let a=i*2.4;ellipse(x+Math.cos(a)*r*.22,y+Math.sin(a)*r*.22,1.5,1.5);}};
   const stem=(x,y,h,r)=>{curve(x,y,x-30,y+h*.5,x+40,y+h*.6,x,y+h);leaf(x+5,y+h*.48,1);leaf(x,y+h*.72,-1);flower(x,y,r);};
-  switch(seed%6){
+  switch(seed%12){
   case 0:
     stem(600,250,460,95);stem(370,370,340,70);stem(810,355,355,80);stem(245,510,200,45);stem(935,485,225,50);
     curve(195,723,430,690,790,760,1010,718);curve(305,753,430,730,820,790,898,749);
@@ -26,5 +26,18 @@ export function drawSketch(c, seed=0) {
     for(const [x,y,r] of [[380,360,65],[580,250,80],[800,340,70],[590,430,55],[730,200,43]]){line(x,y+35,600,545);flower(x,y,r);}leaf(450,480,-1);leaf(730,460,1);break;
   case 5:
     for(const [x,y,s] of [[380,330,1],[800,470,.8],[460,610,.55]]){c.save();c.translate(x,y);c.scale(s,s);ellipse(0,0,145,85);line(130,0,220,-90,220,90,130,0);ellipse(-80,-15,9,9);curve(-45,-70,-5,0,-5,0,-45,70);curve(-25,-80,20,-150,65,-120,80,-65);c.restore();}for(const x of [180,250,920,1010])curve(x,790,x-90,610,x+90,680,x,580);for(const [x,y]of [[180,180],[210,240],[900,220],[940,150],[730,690]])ellipse(x,y,14,14);curve(130,800,450,760,800,830,1080,790);break;
+  case 6:
+    c.save();c.translate(600,450);for(let i=0;i<12;i++){c.save();c.rotate(i*Math.PI/6);ellipse(0,-135,44,95);ellipse(0,-270,37,66);line(0,-340,20,-370,0,-395,-20,-370,0,-340);c.restore();}ellipse(0,0,42,42);ellipse(0,0,65,65);ellipse(0,0,235,235);ellipse(0,0,350,350);c.restore();break;
+  case 7:
+    line(220,120,980,120,980,740,220,740,220,120);line(600,120,600,380);line(220,380,980,380);line(190,740,1010,740,1010,775,190,775,190,740);
+    ellipse(600,600,150,140);curve(480,480,430,380,470,310,515,350);line(515,350,540,260,595,330,645,325,700,260,715,360);curve(715,360,770,450,730,500,700,510);curve(500,500,540,550,660,550,710,490);ellipse(550,420,7,14);ellipse(650,420,7,14);line(590,455,610,455,600,467,590,455);curve(750,650,970,500,940,780,720,730);line(510,450,445,430);line(510,460,445,465);line(690,450,755,430);line(690,460,755,465);ellipse(820,235,45,45);break;
+  case 8:
+    ellipse(600,590,320,135);ellipse(600,580,285,106);for(const [x,y,r]of [[440,530,-.4],[650,550,.3],[790,500,-.5]]){ellipse(x,y,90,62,r);ellipse(x-70,y-18,8,9);leaf(x,y-55,-1);}line(300,310,890,220);for(const x of [370,550,740]){leaf(x,290,1);leaf(x,290,-1);}ellipse(540,330,67,45,.5);ellipse(830,320,70,46,-.2);break;
+  case 9:
+    for(const [x,y,h]of [[350,290,460],[600,220,530],[850,300,450]]){line(x,y+130,x,750);curve(x,y+130,x-110,y+100,x-110,y,x-80,y);line(x-80,y,x-40,y+30,x,y-20,x+40,y+30,x+80,y);curve(x+80,y,x+110,y+100,x+80,y+130,x,y+130);curve(x,y+130,x-50,y+80,x-50,y+55,x-40,y+30);curve(x,y+130,x+50,y+80,x+50,y+55,x+40,y+30);leaf(x,y+h*.7,1);leaf(x,y+h*.85,-1);}line(230,760,970,760);break;
+  case 10:
+    ellipse(860,215,70,70);line(110,650,360,220,620,650);line(350,650,680,160,1090,650);line(260,390,360,220,465,395,398,355,365,395,330,355,260,390);line(560,340,680,160,827,335,745,305,690,360,635,310,560,340);curve(100,730,350,680,800,780,1100,700);curve(150,800,450,750,820,830,1050,785);break;
+  case 11:
+    for(const [x,y,w]of [[310,600,110],[600,540,125],[900,610,90]]){line(x-w,y,x-w*.7,780,x+w*.7,780,x+w,y);ellipse(x,y,w,24);line(x,y,x,y-250);leaf(x,y-120,1);leaf(x,y-160,-1);leaf(x,y-230,1);}line(150,790,1060,790);break;
   }c.restore();
 }
